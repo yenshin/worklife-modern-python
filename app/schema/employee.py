@@ -1,8 +1,6 @@
-from pydantic import BaseModel, ConfigDict
+from app.schema.base import BaseRepresentation
 
 
-class EmployeeBase(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class EmployeeBase(BaseRepresentation):
     first_name: str
     last_name: str
