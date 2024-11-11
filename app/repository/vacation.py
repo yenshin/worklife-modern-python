@@ -60,16 +60,16 @@ class _VacationRepository(BaseRepository):
         return obj_in
 
     def update(self, session: Session, id: UUID, obj_in: VacationRepresentationNoID):
-        obj_db = session.scalars(
-            select(VacationModel).where(VacationModel.id == id)
+        user_id = session.scalars(
+            select(VacationModel.user_id).where(VacationModel.id == id)
         ).one()
-        session.delete(obj_db)
+        self.delete(session, id)
         session.flush()
         return self.create(
             session,
             VacationModel(
                 id=id,
-                user_id=obj_db.user_id,
+                user_id=user_id,
                 vacation_type=obj_in.vacation_type,
                 start_date=obj_in.start_date,
                 end_date=obj_in.end_date,
