@@ -1,18 +1,14 @@
 import uuid
 
-from fastapi import (
-    Depends,
-    APIRouter,
-)
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.model import EmployeeModel, VacationModel
 from app.repository.employee import EmployeeRepository
 from app.repository.vacation import VacationRepository
 from app.schema import EmployeeRepresentation
 from app.schema.vacation import VacationRepresentation
-from app.model import EmployeeModel
-from app.model import VacationModel
 
 router = APIRouter()
 
@@ -45,7 +41,10 @@ def create_employee_vacation(
     employee_id: uuid.UUID,
     representation: VacationRepresentation,
 ) -> VacationRepresentation:
-    # TODO: rise 404 when EID not found
+    employee = EmployeeRepository.get(session=session, id=employee_id)
+    if employee is None:
+        msg = "Employee not found"
+        raise HTTPException(status.HTTP_404_NOT_FOUND, msg)
     model = VacationModel(
         id=representation.id or uuid.uuid4(),
         user_id=employee_id,
