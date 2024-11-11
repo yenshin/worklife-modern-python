@@ -31,31 +31,16 @@ class _VacationRepository(BaseRepository):
         )
         return session.scalars(stmt).all()
 
-    def _check_overlap(self, session: Session, vacation_target: VacationModel):
-        found_vacations = self._search_overlap(session, vacation_target)
-        if len(found_vacations) == 0:
-            return
-        true_begin = vacation_target.start_date
-        true_end = vacation_target.end_date
-        for vacation in found_vacations:
-            if vacation.vacation_type != vacation_target.vacation_type:
-                msg = "can't merge date of different type"
-                raise Exception(msg)
-            if true_begin > vacation.start_date:
-                true_begin = vacation.start_date
-            if true_end < vacation.end_date:
-                true_end = vacation.start_date
-        vacation_target.start_date = true_begin
-        vacation_target.end_date = true_end
+    def _remove_overlap_in_db(self, session: Session, vacation_ids: list[UUID]):
+        session.execute(delete(VacationModel).where(VacationModel.id.in_(vacation_ids)))
 
-        session.execute(
-            delete(VacationModel).where(
-                VacationModel.id.in_([vacation.id for vacation in found_vacations])
-            )
-        )
+    def _overlap_preparation(self, session: Session, obj_in: VacationModel):
+        found_vacations = self._search_overlap(session, obj_in)
+        to_delete = _prepare_overlap_merging(found_vacations, obj_in)
+        self._remove_overlap_in_db(session, to_delete)
 
-    def create(self, session, obj_in):
-        self._check_overlap(session, obj_in)
+    def create(self, session: Session, obj_in: VacationModel):
+        self._overlap_preparation(session, obj_in)
         session.add(obj_in)
         return obj_in
 
@@ -75,6 +60,26 @@ class _VacationRepository(BaseRepository):
                 end_date=obj_in.end_date,
             ),
         )
+
+
+def _prepare_overlap_merging(
+    found_vacations: Sequence[VacationModel], vacation_target: VacationModel
+) -> list[UUID]:
+    if len(found_vacations) == 0:
+        return []
+    true_begin = vacation_target.start_date
+    true_end = vacation_target.end_date
+    for vacation in found_vacations:
+        if vacation.vacation_type != vacation_target.vacation_type:
+            msg = "can't merge date of different type"
+            raise ValueError(msg)
+        if vacation.start_date <= true_begin <= vacation.end_date:
+            true_begin = vacation.start_date
+        if vacation.start_date <= true_end <= vacation.end_date:
+            true_end = vacation.end_date
+    vacation_target.start_date = true_begin
+    vacation_target.end_date = true_end
+    return [vacation.id for vacation in found_vacations]
 
 
 VacationRepository = _VacationRepository(model=VacationModel)

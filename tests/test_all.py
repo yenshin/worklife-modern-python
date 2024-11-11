@@ -7,9 +7,9 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.db.session import get_db
-from app.model.vacation import VacationType
+from app.model.vacation import VacationModel, VacationType
 from app.repository.employee import EmployeeRepository
-from app.repository.vacation import VacationRepository
+from app.repository.vacation import VacationRepository, _prepare_overlap_merging
 from app.schema import VacationRepresentation, VacationRepresentationNoID
 from app.schema.employee import EmployeeRepresentation, EmployeeSearchQuery
 
@@ -117,6 +117,8 @@ def test_vacation_employee(db_session, api_client, create_user):
     assert VacationRepresentation.model_validate(
         model
     ) == VacationRepresentation.model_validate(updated_vacation)
+
+    # TODO test delete from api
 
 
 def test_search_employee(db_session, api_client, users):
@@ -267,3 +269,114 @@ def test_employee_seach_query():
             vacation_start=datetime.now() + timedelta(days=1),
             vacation_end=datetime.now(),
         )
+
+
+def test_vacation_merging_algorithm():
+    vac1 = VacationModel(
+        id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 1),  # INFO this is monday
+        end_date=datetime(2024, 1, 5),
+    )
+    vac2 = VacationModel(
+        id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 8),  # INFO this is monday
+        end_date=datetime(2024, 1, 10),
+    )
+
+    vac_target = VacationModel(
+        id=uuid.UUID("10000000-0000-0000-0000-000000000000"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 2),  # INFO this is monday
+        end_date=datetime(2024, 1, 9),
+    )
+    to_merge = [vac1, vac2]
+    result = _prepare_overlap_merging(to_merge, vac_target)
+    assert result[0] == vac1.id
+    assert result[1] == vac2.id
+    assert vac_target.start_date == vac1.start_date
+    assert vac_target.end_date == vac2.end_date
+
+    vac3 = VacationModel(
+        id=uuid.UUID("00000000-0000-0000-0000-000000000003"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 12),  # INFO this is monday
+        end_date=datetime(2024, 1, 16),
+    )
+    vac_target = VacationModel(
+        id=uuid.UUID("10000000-0000-0000-0000-000000000000"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 4),  # INFO this is monday
+        end_date=datetime(2024, 1, 12),
+    )
+    to_merge = [vac1, vac2, vac3]
+    result = _prepare_overlap_merging(to_merge, vac_target)
+    assert result[0] == vac1.id
+    assert result[1] == vac2.id
+    assert result[2] == vac3.id
+    assert vac_target.start_date == vac1.start_date
+    assert vac_target.end_date == vac3.end_date
+
+    vac2.vacation_type = VacationType.UnpaidLeave
+    to_merge = [vac1, vac2, vac3]
+    with pytest.raises(ValueError, match="can't merge date of different type"):
+        _prepare_overlap_merging(to_merge, vac_target)
+
+
+# TODO: fix the code to manage this case
+def _test_merging_complexecase():
+    """
+    i is time unit in days
+    1, 2, 3 are vacation
+    t is the target vacation that should be merged
+    r is the expected result
+
+    i-i-i-i-i-i-i-i-i
+    1-1   2---2   3-3
+        t-------t
+    r---------------r
+    """
+    vac1 = VacationModel(
+        id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 1),
+        end_date=datetime(2024, 1, 2),
+    )
+
+    vac2 = VacationModel(
+        id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 4),
+        end_date=datetime(2024, 1, 6),
+    )
+
+    vac3 = VacationModel(
+        id=uuid.UUID("10000000-0000-0000-0000-000000000003"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 8),
+        end_date=datetime(2024, 1, 9),
+    )
+
+    vac_target = VacationModel(
+        id=uuid.UUID("10000000-0000-0000-0000-000000000000"),
+        user_id=uuid.UUID(int=0),
+        vacation_type=VacationType.PaidLeave,
+        start_date=datetime(2024, 1, 3),
+        end_date=datetime(2024, 1, 7),
+    )
+    to_merge = [vac1, vac2, vac3]
+    result = _prepare_overlap_merging(to_merge, vac_target)
+    assert result[0] == vac1.id
+    assert result[1] == vac2.id
+    assert result[2] == vac3.id
+    assert vac_target.start_date == vac1.start_date
+    assert vac_target.end_date == vac3.end_date
