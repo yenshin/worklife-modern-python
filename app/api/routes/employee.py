@@ -20,14 +20,21 @@ def get_employees(
     *,
     search_query: Annotated[EmployeeSearchQuery, Query()],
 ) -> Sequence[EmployeeRepresentation]:
-    return EmployeeRepository.search(session=session, search_query=search_query)
+    return [
+        EmployeeRepresentation.model_validate(employee)
+        for employee in EmployeeRepository.search(
+            session=session, search_query=search_query
+        )
+    ]
 
 
 @router.get("/{employee_id}")
 def get_employee(
     session: Session = Depends(get_db), *, employee_id: uuid.UUID
 ) -> EmployeeRepresentation:
-    return EmployeeRepository.get(session=session, id=employee_id)
+    return EmployeeRepresentation.model_validate(
+        EmployeeRepository.get(session=session, id=employee_id)
+    )
 
 
 @router.post("/")
@@ -39,7 +46,9 @@ def create_employee(
         last_name=representation.last_name,
         first_name=representation.first_name,
     )
-    return EmployeeRepository.create(session=session, obj_in=model)
+    return EmployeeRepresentation.model_validate(
+        EmployeeRepository.create(session=session, obj_in=model)
+    )
 
 
 @router.post("/{employee_id}/vacation")
@@ -60,4 +69,6 @@ def create_employee_vacation(
         start_date=representation.start_date,
         end_date=representation.end_date,
     )
-    return VacationRepository.create(session=session, obj_in=model)
+    return VacationRepresentation.model_validate(
+        VacationRepository.create(session=session, obj_in=model)
+    )

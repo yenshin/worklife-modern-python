@@ -1,15 +1,21 @@
 """First migration
 
 Revision ID: 27bf2aa3b8c7
-Revises: 
+Revises:
 Create Date: 2022-05-19 15:22:57.500725
 
 """
 
-from alembic import op
-import sqlalchemy as sa
+from uuid import UUID
 
-from app.model.base import CustomUUID
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
+
+
+class CustomUUID(postgresql.UUID):
+    python_type = UUID  # type: ignore
+
 
 # revision identifiers, used by Alembic.
 revision = "27bf2aa3b8c7"

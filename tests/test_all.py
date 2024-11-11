@@ -5,7 +5,6 @@ from datetime import datetime
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 
 from app.db.session import get_db
 from app.model.vacation import VacationType

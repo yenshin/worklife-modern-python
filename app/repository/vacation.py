@@ -1,16 +1,13 @@
-from datetime import datetime
 from typing import Sequence
 from uuid import UUID
 
-from fastapi import HTTPException, status
-from pytest import Session
 from sqlalchemy import and_, delete, or_, select
 from sqlalchemy.orm import Session
 
 from app.model.employee import EmployeeModel
 from app.model.vacation import VacationModel
 from app.repository.base import BaseRepository
-from app.schema import VacationRepresentation, VacationRepresentationNoID
+from app.schema import VacationRepresentationNoID
 
 
 class _VacationRepository(BaseRepository):
@@ -62,12 +59,17 @@ class _VacationRepository(BaseRepository):
         session.add(obj_in)
         return obj_in
 
-    def update(self, session, id: UUID, obj_in):
-        self.delete(session, id)
+    def update(self, session: Session, id: UUID, obj_in: VacationRepresentationNoID):
+        obj_db = session.scalars(
+            select(VacationModel).where(VacationModel.id == id)
+        ).one()
+        session.delete(obj_db)
+        session.flush()
         return self.create(
             session,
             VacationModel(
                 id=id,
+                user_id=obj_db.user_id,
                 vacation_type=obj_in.vacation_type,
                 start_date=obj_in.start_date,
                 end_date=obj_in.end_date,

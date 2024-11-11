@@ -3,7 +3,6 @@ from typing import Self
 
 from pydantic import BaseModel, model_validator
 
-from app.model import vacation
 from app.model.vacation import VacationType
 from app.schema.base import BaseRepresentation
 
