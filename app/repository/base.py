@@ -1,3 +1,6 @@
+from sqlalchemy.orm import Session
+
+
 class BaseRepository:
     def __init__(self, model):
         self.model = model
@@ -12,8 +15,9 @@ class BaseRepository:
     def get_many(self, session, *_, **kwargs):
         return self._query(session, **kwargs).all()
 
-    def create(self, session, obj_in):
+    def create(self, session: Session, obj_in):
         session.add(obj_in)
+        return obj_in
 
     def update(self, session, obj_in):
         raise NotImplementedError

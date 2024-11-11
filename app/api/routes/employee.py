@@ -1,16 +1,26 @@
 import uuid
+from typing import Annotated, Sequence
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.model import EmployeeModel, VacationModel
 from app.repository.employee import EmployeeRepository
 from app.repository.vacation import VacationRepository
-from app.schema import EmployeeRepresentation
+from app.schema import EmployeeRepresentation, EmployeeSearchQuery
 from app.schema.vacation import VacationRepresentation
 
 router = APIRouter()
+
+
+@router.get("/")
+def get_employees(
+    session: Session = Depends(get_db),
+    *,
+    search_query: Annotated[EmployeeSearchQuery, Query()],
+) -> Sequence[EmployeeRepresentation]:
+    return EmployeeRepository.search(session=session, search_query=search_query)
 
 
 @router.get("/{employee_id}")
@@ -29,9 +39,7 @@ def create_employee(
         last_name=representation.last_name,
         first_name=representation.first_name,
     )
-    EmployeeRepository.create(session=session, obj_in=model)
-
-    return model
+    return EmployeeRepository.create(session=session, obj_in=model)
 
 
 @router.post("/{employee_id}/vacation")
@@ -52,5 +60,4 @@ def create_employee_vacation(
         start_date=representation.start_date,
         end_date=representation.end_date,
     )
-    VacationRepository.create(session=session, obj_in=model)
-    return model
+    return VacationRepository.create(session=session, obj_in=model)
