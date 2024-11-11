@@ -1,4 +1,8 @@
 {
+    "files.exclude": {
+        "**/.git": true,
+        "**/__pycache__": true
+    },
     "[python]": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "charliermarsh.ruff",
