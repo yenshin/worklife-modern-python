@@ -54,7 +54,8 @@ def create_user(api_client, db_session):
             EmployeeRepository.delete(db_session, id=uuid.UUID(user["id"]))
 
 
-def test_create_employee(db_session, create_user):
+@pytest.fixture
+def users(create_user):
     username01 = "user" + uuid.uuid4().hex.upper()[0:6]
     username02 = "user" + uuid.uuid4().hex.upper()[0:6]
     username03 = "user" + uuid.uuid4().hex.upper()[0:6]
@@ -64,7 +65,10 @@ def test_create_employee(db_session, create_user):
     for user in usernames:
         json_val = create_user(user)
         users.append(json_val)
+    return users
 
+
+def test_create_employee(db_session, users):
     for user in users:
         value = EmployeeRepository.get(db_session, id=user["id"])
         assert value is not None
@@ -115,23 +119,7 @@ def test_vacation_employee(db_session, api_client, create_user):
     ) == VacationRepresentation.model_validate(updated_vacation)
 
 
-def test_search_employee(db_session, api_client, create_user):
-    username01 = "user" + uuid.uuid4().hex.upper()[0:6]
-    username02 = "user" + uuid.uuid4().hex.upper()[0:6]
-    username03 = "user" + uuid.uuid4().hex.upper()[0:6]
-    username04 = "user" + uuid.uuid4().hex.upper()[0:6]
-    usernames = [username01, username02, username03, username04]
-    users = []
-    for user in usernames:
-        json_val = create_user(user)
-        users.append(json_val)
-
-    for user in users:
-        value = EmployeeRepository.get(db_session, id=user["id"])
-        assert value is not None
-        assert value.first_name == user["first_name"]
-        assert value.last_name == user["last_name"]
-
+def test_search_employee(db_session, api_client, users):
     monday = 5
     month = 2
     vacationsu1 = [
@@ -231,12 +219,17 @@ def test_search_employee(db_session, api_client, create_user):
     assert len(res_data) == 1
     assert str(EmployeeRepresentation.model_validate(res_data[0]).id) == users[1]["id"]
 
-    url = f"/employee?vacation_type={VacationType.PaidLeave.value}"
+    url = f"/employee?vacation_type={VacationType.PaidLeave.value}&vacation_start={datetime(2024, month, monday).isoformat()}&vacation_end={datetime(2024, month, monday + 10).isoformat()}"
     res = api_client.get(url)
     assert res.status_code == status.HTTP_200_OK
     res_data = res.json()
-    assert len(res_data) == 1
-    assert str(EmployeeRepresentation.model_validate(res_data[0]).id) == users[1]["id"]
+    assert len(res_data) == 2
+
+    url = f"/employee?vacation_type={VacationType.UnpaidLeave.value}&vacation_start={datetime(2024, month, monday).isoformat()}&vacation_end={datetime(2024, month, monday + 10).isoformat()}"
+    res = api_client.get(url)
+    assert res.status_code == status.HTTP_200_OK
+    res_data = res.json()
+    assert len(res_data) == 2
 
 
 def test_employee_seach_query():
