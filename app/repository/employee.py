@@ -9,9 +9,6 @@ from app.schema import EmployeeSearchQuery
 
 
 class _EmployeeRepository(BaseRepository):
-    def create(self, session: Session, obj_in: EmployeeModel):
-        session.add(obj_in)
-
     def search(self, session: Session, search_query: EmployeeSearchQuery):
         stmt = select(EmployeeModel).group_by(EmployeeModel.id)
         if search_query.last_name is not None:
