@@ -12,8 +12,9 @@ class CustomUUID(postgresql.UUID):
 @as_declarative()
 class BaseModel:
     id = Column(
-        CustomUUID(as_uuid=True),
+        postgresql.UUID,
         primary_key=True,
         index=True,
         default=uid.uuid4,
+        nullable=False,
     )

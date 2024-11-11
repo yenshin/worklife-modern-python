@@ -1,6 +1,6 @@
 from app.schema.base import BaseRepresentation
 
 
-class EmployeeBase(BaseRepresentation):
+class EmployeeRepresentation(BaseRepresentation):
     first_name: str
     last_name: str

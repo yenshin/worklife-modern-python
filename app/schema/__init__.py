@@ -1,1 +1,3 @@
-from .employee import EmployeeBase
+from .employee import EmployeeRepresentation
+
+__all__ = ["EmployeeRepresentation"]

@@ -13,4 +13,10 @@ class BaseRepository:
         return self._query(session, **kwargs).all()
 
     def create(self, session, obj_in):
+        session.add(obj_in)
+
+    def update(self, session, obj_in):
         raise NotImplementedError
+
+    def delete(self, session, id):
+        session.delete(self.get(session, id=id))
