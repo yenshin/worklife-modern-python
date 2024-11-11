@@ -29,4 +29,10 @@ class EmployeeSearchQuery(BaseModel):
             self.vacation_start is not None and self.vacation_end is None
         ):
             raise ValueError("if vacation, both date must be specified")
+        if (
+            self.vacation_start is not None
+            and self.vacation_end is not None
+            and self.vacation_start > self.vacation_end
+        ):
+            raise ValueError("start must be equal or less than end")
         return self
