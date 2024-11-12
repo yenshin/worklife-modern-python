@@ -1,3 +1,48 @@
+# post mortem
+old repos = https://github.com/yenshin/worklife-oldschoolway
+For the study case I intend to work a full week.
+My objective is to have a proper python code sample to be used
+has a knowledge project with the best practice
+
+I started the work with my knowledge available.
+Consequently I produced an old-fashioned mirco service.
+
+I mean old fashioned because:
+  - I didn't have the knowledge of db migration using alembic
+  so I decided to modify create_db.sql to have a proper data base.
+  - I didn't fully understand poetry, because never used, so installed 
+  package manually on my environment
+  - I would like to have a proper environment set and debug the microservice
+  in proper way
+  so I decided to modify the docker-compose.yml to enable remote debugging
+  open port and so on.
+  - I produce some test but couldn't debug properly because my environment
+  - I do all the session commit rollback in repository because I didn't know
+  this was something manage by fast api + sql alchemy
+
+
+Because all of this take me way too much time considering the target (4h)
+I decided have a chat with a friend to know more about the philosophy of
+backend python project.
+
+So thanks to him I learn more about all the philosophy, the set up and so on.
+  - So I prepare the project to be debugged locally using poetry to install the required package
+  - Prepare an environnment with the correct tool, for code formatting, auto import, auto completion
+  and type checking
+  - do a proper migration using the alembic (through the make file)
+  - add unit test with fixtures to factorise the code and the possibility to debug locally
+  - improve the migration system to remove dependency with the python code
+
+we had talk about clean archi:
+  - so I try when possible to decorrelate business code from db or route code
+  (def _prepare_overlap_merging)
+
+this project allow me, to deepen my knowledge on current backend methodologie.
+and this is something that can be used for any language.
+
+# end of post mortem
+
+
 # Worklife Python Technical test
 
 This project serves as a technical test for middle-senior backend developers in Python.
